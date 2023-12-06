@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Осветительные приборы</title>
+    <style>
+        /* Ваши стили здесь */
+
+        .fixture {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin: 10px;
+            display: inline-block;
+            text-align: center;
+            line-height: 40px;
+            position: relative;
+            touch-action: none; /* Отключаем браузерное поведение по умолчанию для сенсорного ввода */
+        }
+
+        .fixture button {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            color: red;
+        }
+
+        .beam { background-color: blue; color: white; }
+        .wash { background-color: red; color: white; }
+        .par { background-color: green; color: white; }
+
+        .input-field {
+            margin: 10px;
+            display: inline-block;
+            width: 30px; /* Уменьшаем ширину поля ввода */
+            text-align: center;
+            position: relative;
+            touch-action: none; /* Отключаем браузерное поведение по умолчанию для сенсорного ввода */
+        }
+
+        .input-field input {
+            width: 30px; /* Уменьшаем ширину ввода вместе с полем */
+            touch-action: none; /* Отключаем браузерное поведение по умолчанию для сенсорного ввода */
+        }
+
+        .input-field button {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            color: red;
+        }
+
+        .farm-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .farm {
+            height: 5px;
+            background-color: gray;
+            margin: 10px;
+            flex-grow: 1; /* Даем ферме возможность растягиваться */
+            position: relative;
+            touch-action: none; /* Отключаем браузерное поведение по умолчанию для сенсорного ввода */
+            transform-origin: left center; /* Устанавливаем точку трансформации в левую часть линии */
+        }
+
+        .farm-controls {
+            display: flex;
+            flex-direction: column;
+            margin: 0 10px;
+            position: absolute;
+            right: -50px;
+        }
+
+        .farm-controls button {
+            margin: 5px 0;
+        }
+
+        .rotate-button {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div>
+    <h2>Осветительные приборы</h2>
+    <button onclick="addFixture('beam')">Добавить Beam</button>
+    <button onclick="addFixture('wash')">Добавить Wash</button>
+    <button onclick="addFixture('par')">Добавить Par</button>
+    <button onclick="addInputField()">Добавить Адрес</button>
+    <button onclick="addFarm()">Добавить ферму</button>
+</div>
+
+<div id="fixturesContainer"></div>
+<div id="inputFieldsContainer"></div>
+
+<script>
+    let rotationAngle = 0;
+
+    function addFixture(type) {
+        const fixtureContainer = document.getElementById('fixturesContainer');
+        const fixtureElement = document.createElement('div');
+        fixtureElement.className = `fixture ${type}`;
+        fixtureElement.innerHTML = `
+            <button onclick="removeElement(this)">✖</button>
+        `;
+
+        fixtureContainer.appendChild(fixtureElement);
+
+        // Добавляем возможность перемещения и удаления для каждого прибора
+        handleTouchEvents(fixtureElement);
+    }
+
+    function removeElement(button) {
+        const container = button.parentNode.parentNode;
+        const element = button.parentNode;
+        container.removeChild(element);
+    }
+
+    function addInputField() {
+        const inputFieldsContainer = document.getElementById('inputFieldsContainer');
+        const inputField = document.createElement('div');
+        inputField.className = 'input-field';
+        inputField.innerHTML = `
+            <input type="number" maxlength="4" ontouchstart="handleTouchStart(event)" ontouchmove="handleTouchMove(event)">
+            <button onclick="removeElement(this)">✖</button>
+        `;
+        inputFieldsContainer.appendChild(inputField);
+
+        // Добавляем возможность перемещения и удаления для строки ввода цифр
+        handleTouchEvents(inputField);
+    }
+
+    function addFarm() {
+        const fixturesContainer = document.getElementById('fixturesContainer');
+        const farmElement = document.createElement('div');
+        farmElement.className = 'farm';
+
+        fixturesContainer.appendChild(farmElement);
+
+        // Добавляем возможность перемещения, удаления и вращения для фермы
+        handleTouchEvents(farmElement);
+        handleRotation(farmElement);
+
+        // Добавляем контролы только при первом добавлении фермы
+        if (!farmElement.controlsAdded) {
+            const farmControls = document.createElement('div');
+            farmControls.className = 'farm-controls';
+            farmControls.innerHTML = `
+                <button class="adjust-button" data-adjustment="10" onclick="adjustElementLength(this.parentNode.parentNode, 10)">+</button>
+                <button class="adjust-button" data-adjustment="-10" onclick="adjustElementLength(this.parentNode.parentNode, -10)">-</button>
+            `;
+            farmElement.appendChild(farmControls);
+            farmElement.controlsAdded = true;
+
+            // Добавляем кнопку вращения
+            addRotateButton();
+        }
+    }
+
+    function addRotateButton() {
+        const farmControls = document.querySelector('.farm-controls');
+        const rotateButton = document.createElement('button');
+        rotateButton.className = 'rotate-button';
+        rotateButton.textContent = 'Rotate';
+        rotateButton.onclick = rotateFarm;
+        farmControls.appendChild(rotateButton);
+    }
+
+    function rotateFarm() {
+        rotationAngle += 10;
+        const farmElement = document.querySelector('.farm');
+        farmElement.style.transform = `rotate(${rotationAngle}deg)`;
+    }
+
+    // Функция для управления длиной элемента (фермы)
+    function adjustElementLength(element, adjustment) {
+        const currentWidth = parseInt(getComputedStyle(element).width, 10);
+        const newWidth = Math.max(currentWidth + adjustment, 10); // Минимальная ширина 10px
+        element.style.width = newWidth + 'px';
+    }
+
+    // Добавленные функции для обработки перемещения и удаления
+        function handleTouchEvents(element) {
+        // Добавляем возможность перемещения и удаления для элемента
+        element.addEventListener('touchstart', function(e) {
+            const rect = element.getBoundingClientRect();
+            element.startX = e.touches[0].clientX - rect.left;
+            element.startY = e.touches[0].clientY - rect.top;
+            isDragging = true;
+        });
+
+        element.addEventListener('touchmove', function(e) {
+            if (isDragging) {
+                element.style.left = e.touches[0].clientX - element.startX + 'px';
+                element.style.top = e.touches[0].clientY - element.startY + 'px';
+            }
+        });
+
+        element.addEventListener('touchend', function() {
+            isDragging = false;
+        });
+
+        // Добавляем общую обработку для удаления
+        const deleteButton = element.querySelector('button');
+        deleteButton.addEventListener('touchstart', function(e) {
+            e.stopPropagation(); // Предотвращаем всплытие события, чтобы избежать одновременного перемещения и удаления
+        });
+
+        deleteButton.addEventListener('touchend', function() {
+            removeElement(deleteButton);
+        });
+    }
+
+    // Функция для управления вращением элемента (фермы)
+    function handleRotation(element) {
+        const rotateFarm = (angle) => {
+            rotationAngle += angle;
+            element.style.transform = `rotate(${rotationAngle}deg)`;
+        };
+
+        window.rotateFarm = () => {
+            rotateFarm(10);
+        };
+    }
+
+    // Добавленные функции для обработки перемещения
+    function handleTouchStart(event) {
+        const target = event.target;
+        isDragging = true;
+        target.startX = event.touches[0].clientX - target.getBoundingClientRect().left;
+        target.startY = event.touches[0].clientY - target.getBoundingClientRect().top;
+    }
+
+    function handleTouchMove(event) {
+        if (isDragging) {
+            const target = event.target;
+            target.style.left = event.touches[0].clientX - target.startX + 'px';
+            target.style.top = event.touches[0].clientY - target.startY + 'px';
+        }
+    }
+
+    function handleTouchEnd() {
+        isDragging = false;
+    }
+</script>
+
+</body>
+</html>
